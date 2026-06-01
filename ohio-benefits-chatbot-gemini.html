@@ -83,6 +83,19 @@ body {
 .hdr-btn:hover{background:var(--s1);border-color:var(--acc);color:var(--acc)}
 .hdr-btn.active{background:var(--gem-lt);border-color:var(--gem);color:var(--gem)}
 
+/* ── TTS speaker button on bot messages ── */
+.tts-btn{display:none;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--bd);background:var(--s0);cursor:pointer;color:var(--t3);flex-shrink:0;margin-top:6px;transition:background 0.12s,color 0.12s,border-color 0.12s}
+.tts-btn:hover{background:var(--acc-lt);color:var(--acc);border-color:var(--acc)}
+.tts-btn.speaking{background:var(--acc-lt);color:var(--acc);border-color:var(--acc);animation:tts-pulse 1.4s ease-in-out infinite}
+@keyframes tts-pulse{0%,100%{box-shadow:0 0 0 0 rgba(26,86,196,0.3)}50%{box-shadow:0 0 0 5px rgba(26,86,196,0)}}
+.tts-enabled .msg.bot .tts-btn{display:flex}
+/* TTS reading bar at bottom */
+.tts-bar{display:none;align-items:center;gap:10px;padding:7px 16px;background:#eff6ff;border-top:1px solid #bfdbfe;font-size:12.5px;color:var(--acc);flex-shrink:0}
+.tts-bar.show{display:flex}
+.tts-bar-icon{width:14px;height:14px;flex-shrink:0;color:var(--acc)}
+.tts-stop{margin-left:auto;background:none;border:1px solid currentColor;border-radius:var(--rs);padding:3px 8px;font-size:11px;color:inherit;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.7}
+.tts-stop:hover{opacity:1}
+
 /* ── API key banner (shown when no key set) ── */
 .api-banner{background:var(--gem-lt);border-bottom:1px solid #bfdbfe;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:13px;color:var(--gem)}
 .api-banner.hide{display:none}
@@ -239,6 +252,10 @@ body {
       </div>
       <div class="hdr-rt">
         <div class="sdot" id="sdot"></div>
+        <button class="hdr-btn" id="tts-toggle-btn" onclick="toggleTTS()" title="Toggle read-aloud for bot responses" aria-label="Toggle text-to-speech">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          <span>Read Aloud</span>
+        </button>
         <button class="hdr-btn" id="set-btn" onclick="toggleSettings()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>Settings</span>
@@ -302,6 +319,20 @@ body {
         </div>
       </div>
 
+      <div class="set-section-title" style="margin-top:10px">🔊 Read Aloud Voice</div>
+      <div class="set-row" style="align-items:flex-end;gap:10px">
+        <div class="sf" style="flex:2;min-width:200px">
+          <label for="tts-voice">Voice</label>
+          <select id="tts-voice"><option value="">Loading voices…</option></select>
+        </div>
+        <div class="sf" style="flex:1;min-width:130px">
+          <label for="tts-rate">Speed — <span id="tts-rate-lbl">1.0×</span></label>
+          <input type="range" id="tts-rate" min="0.6" max="1.6" step="0.1" value="1.0" oninput="document.getElementById('tts-rate-lbl').textContent=parseFloat(this.value).toFixed(1)+'×'" style="width:100%;accent-color:var(--acc);cursor:pointer;padding:0">
+        </div>
+        <button class="test-btn" onclick="previewTTS()" style="margin-bottom:1px">Preview</button>
+      </div>
+      <p class="set-hint" style="margin-top:6px">Tip: look for voices labeled <strong>Neural</strong>, <strong>Natural</strong>, or <strong>Online</strong> — they sound much more human than the default.</p>
+
     </div>
 
     <!-- Voice status bar -->
@@ -311,14 +342,24 @@ body {
       <button class="voice-cancel" onclick="cancelVoice()">Cancel</button>
     </div>
 
+    <!-- TTS reading bar -->
+    <div class="tts-bar" id="tts-bar">
+      <svg class="tts-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <span id="tts-bar-msg">Reading response aloud…</span>
+      <button class="tts-stop" onclick="stopTTS()">Stop</button>
+    </div>
+
     <!-- Messages -->
     <div class="messages" id="messages" role="log" aria-live="polite">
       <div class="msg bot">
-        <div class="mava"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="mava" style="background:linear-gradient(135deg,var(--blue),var(--acc))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <div class="bbl">
           Hello! I can help you understand the recent changes to <strong>SNAP</strong> (food assistance) and <strong>Medicaid</strong> in Ohio, following the One Big Beautiful Bill Act signed July 2025.<br><br>
           Ask me by <strong>typing</strong> or click the 🎙 <strong>microphone</strong> to speak. Enter your Gemini API key in <strong>Settings</strong> to get started.
         </div>
+        <button class="tts-btn" onclick="speakMsg(this)" aria-label="Read this response aloud" title="Read aloud">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
       </div>
     </div>
 
@@ -391,6 +432,9 @@ const history = [];
 let settingsOpen = false;
 let speechRec = null;
 let isListening = false;
+let ttsEnabled = false;
+let currentUtterance = null;
+let currentTtsBtn = null;
 
 /* ══════════════════════════════════════
    HELPERS
@@ -483,8 +527,18 @@ function addMsg(role,html){
   const ico = role==='bot'
     ?'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
     :'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
-  d.innerHTML=`<div class="mava" style="${bg}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></div><div class="bbl">${html}</div>`;
+  const ttsBtnHtml = role==='bot'
+    ? `<button class="tts-btn" onclick="speakMsg(this)" aria-label="Read this response aloud" title="Read aloud">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </button>`
+    : '';
+  d.innerHTML=`<div class="mava" style="${bg}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></div><div class="bbl">${html}</div>${ttsBtnHtml}`;
   c.appendChild(d); c.scrollTop=c.scrollHeight;
+  // Auto-read if TTS mode is on
+  if(role==='bot' && ttsEnabled){
+    const btn = d.querySelector('.tts-btn');
+    if(btn) speakMsg(btn);
+  }
 }
 function showTyping(){
   const c=document.getElementById('messages'),d=document.createElement('div');
@@ -613,6 +667,129 @@ function startVoice(){
   };
   try { speechRec.start(); }
   catch(e){ isListening=false; setMicState('idle'); hideVoiceBar(); }
+}
+
+/* ══════════════════════════════════════
+   TEXT-TO-SPEECH
+══════════════════════════════════════ */
+function populateTTSVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if(!voices.length) return;
+  const sel = document.getElementById('tts-voice');
+  const prev = sel.value;
+  sel.innerHTML = '';
+
+  // Sort: prefer natural/neural/online voices first, then by language
+  const scored = voices.map(v => {
+    const name = v.name.toLowerCase();
+    let score = 0;
+    if(/neural|natural|enhanced|premium/.test(name)) score += 30;
+    if(!v.localService) score += 20; // online voices are usually better
+    if(/en[-_]us/i.test(v.lang)) score += 10;
+    else if(/en/i.test(v.lang)) score += 5;
+    return { v, score };
+  }).sort((a,b) => b.score - a.score);
+
+  scored.forEach(({v}) => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    const tag = !v.localService ? ' ✦' : '';
+    opt.textContent = `${v.name} (${v.lang})${tag}`;
+    if(v.name === prev) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Auto-select best English voice if nothing was previously chosen
+  if(!prev){
+    const best = scored.find(({v}) => /en/i.test(v.lang));
+    if(best) sel.value = best.v.name;
+  }
+}
+
+function getSelectedVoice(){
+  const sel = document.getElementById('tts-voice');
+  const name = sel ? sel.value : '';
+  return window.speechSynthesis.getVoices().find(v => v.name === name) || null;
+}
+
+function getTTSRate(){
+  const el = document.getElementById('tts-rate');
+  return el ? parseFloat(el.value) : 1.0;
+}
+
+function toggleTTS(){
+  ttsEnabled = !ttsEnabled;
+  const btn = document.getElementById('tts-toggle-btn');
+  const panel = document.getElementById('messages');
+  btn.classList.toggle('active', ttsEnabled);
+  panel.closest('.chat-panel').classList.toggle('tts-enabled', ttsEnabled);
+  if(!ttsEnabled) stopTTS();
+}
+
+function speakMsg(btn){
+  if(!('speechSynthesis' in window)){
+    addMsg('bot','Sorry, your browser doesn\'t support text-to-speech. Try Chrome or Edge.');
+    return;
+  }
+  if(currentTtsBtn === btn && window.speechSynthesis.speaking){
+    stopTTS(); return;
+  }
+  stopTTS();
+  const bbl = btn.closest('.msg').querySelector('.bbl');
+  const text = bbl ? (bbl.innerText || bbl.textContent) : '';
+  if(!text.trim()) return;
+
+  currentUtterance = new SpeechSynthesisUtterance(text);
+  const voice = getSelectedVoice();
+  if(voice) currentUtterance.voice = voice;
+  currentUtterance.lang = getLang ? getLang() : 'en-US';
+  currentUtterance.rate = getTTSRate();
+  currentUtterance.pitch = 1;
+
+  currentTtsBtn = btn;
+  btn.classList.add('speaking');
+  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="6" width="4" height="12" rx="1"/><rect x="15" y="6" width="4" height="12" rx="1"/></svg>`;
+  btn.title = 'Stop reading';
+
+  document.getElementById('tts-bar').classList.add('show');
+  document.getElementById('tts-bar-msg').textContent = 'Reading response aloud…';
+
+  currentUtterance.onend = () => resetTtsBtn(btn);
+  currentUtterance.onerror = () => resetTtsBtn(btn);
+  window.speechSynthesis.speak(currentUtterance);
+}
+
+function previewTTS(){
+  stopTTS();
+  if(!('speechSynthesis' in window)) return;
+  const utt = new SpeechSynthesisUtterance('Hello! I\'m your Ohio Benefits Assistant. How can I help you today?');
+  const voice = getSelectedVoice();
+  if(voice) utt.voice = voice;
+  utt.rate = getTTSRate();
+  utt.pitch = 1;
+  window.speechSynthesis.speak(utt);
+}
+
+function stopTTS(){
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  if(currentTtsBtn) resetTtsBtn(currentTtsBtn);
+  document.getElementById('tts-bar').classList.remove('show');
+  currentUtterance = null;
+  currentTtsBtn = null;
+}
+
+function resetTtsBtn(btn){
+  btn.classList.remove('speaking');
+  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+  btn.title = 'Read aloud';
+  document.getElementById('tts-bar').classList.remove('show');
+}
+
+// Populate voices on load and when voices change (Chrome loads them async)
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = populateTTSVoices;
+  populateTTSVoices();
 }
 
 function cancelVoice(){
